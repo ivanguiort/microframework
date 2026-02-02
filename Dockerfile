@@ -16,6 +16,8 @@ RUN sed -i "s/80/${PORT}/" /etc/apache2/ports.conf \
 
 # Copiar código fuente
 WORKDIR /var/www/html
+RUN rm -f /var/www/html/index.html
+
 COPY index.php /var/www/html/index.php
 
 
