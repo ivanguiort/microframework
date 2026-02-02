@@ -103,12 +103,13 @@
     <div class="container">
         <h2>📦 Lista de Items</h2>
 
+        <!-- Formulario para agregar items -->
         <form action="/api/items" method="POST" class="form-group">
-            <input type="text" name="codigo" placeholder="Código" required>
             <input type="text" name="nombre" placeholder="Nombre del item" required>
             <button type="submit">Agregar</button>
         </form>
 
+        <!-- Tabla de items -->
         <table id="tabla-items">
             <thead>
                 <tr>
@@ -124,21 +125,26 @@
     </div>
 
     <script>
-        fetch('/api/items')
-            .then(res => res.json())
-            .then(items => {
-                const tbody = document.querySelector('#tabla-items tbody');
-                tbody.innerHTML = items.map(item => `
-                    <tr>
-                        <td>${item.codigo}</td>
-                        <td>${item.nombre}</td>
-                        <td>
-                            <a href="/api/items/delete/${item.codigo}" class="btn-delete">Eliminar</a>
-                        </td>
-                    </tr>
-                `).join('');
-            });
+        // Función para cargar items desde la API
+        const cargarItems = () => {
+            fetch('/api/items')
+                .then(res => res.json())
+                .then(items => {
+                    const tbody = document.querySelector('#tabla-items tbody');
+                    tbody.innerHTML = items.map(item => `
+                        <tr>
+                            <td>${item.codigo}</td>
+                            <td>${item.nombre}</td>
+                            <td>
+                                <a href="/api/items/delete/${item.codigo}" class="btn-delete">Eliminar</a>
+                            </td>
+                        </tr>
+                    `).join('');
+                });
+        };
+
+        // Cargar items al iniciar la página
+        cargarItems();
     </script>
 </body>
 </html>
-
