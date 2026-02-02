@@ -7,7 +7,7 @@ const port = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 1. LA CONEXIÓN (Usando la variable de Railway)
+// 1. CONEXIÓN A MYSQL
 const db = mysql.createPool({
   uri: process.env.MYSQL_URL,
   waitForConnections: true,
@@ -15,52 +15,57 @@ const db = mysql.createPool({
   queueLimit: 0
 });
 
-// 2. CHEQUEO DE CONEXIÓN Y CREACIÓN DE TABLA
+// 2. INICIALIZACIÓN DE LA BASE DE DATOS Y TABLA
 const initDB = () => {
     db.getConnection((err, connection) => {
         if (err) {
             console.log("MySQL no responde todavía, reintentando en 5s...");
-            setTimeout(initDB, 5000); // Reintenta si MySQL aún está arrancando
+            setTimeout(initDB, 5000);
         } else {
             console.log("Conexión a MySQL exitosa. Creando tabla si no existe...");
-            const sql = `CREATE TABLE IF NOT EXISTS users (
+            const sql = `CREATE TABLE IF NOT EXISTS items (
                 id INT AUTO_INCREMENT PRIMARY KEY,
-                name VARCHAR(255) NOT NULL
+                codigo VARCHAR(50) NOT NULL,
+                nombre VARCHAR(255) NOT NULL
             )`;
             connection.query(sql, (err) => {
-                connection.release(); // Soltamos la conexión al terminar
+                connection.release();
                 if (err) console.error("Error al crear tabla:", err);
-                else console.log("Tabla 'users' lista para trabajar.");
+                else console.log("Tabla 'items' lista para trabajar.");
             });
         }
     });
 };
 
-initDB(); // Ejecutamos la función al arrancar
+initDB();
 
-// 3. LAS RUTAS (EL CRUD)
+// 3. RUTAS CRUD
 
+// Servir el HTML
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
 // LEER (Read)
-app.get('/api/usuarios', (req, res) => {
-    db.query('SELECT * FROM users ORDER BY id DESC', (err, results) => {
+app.get('/api/items', (req, res) => {
+    db.query('SELECT * FROM items ORDER BY id DESC', (err, results) => {
         if (err) return res.status(500).json(err);
         res.json(results);
     });
 });
 
 // CREAR (Create)
-app.post('/api/usuarios', (req, res) => {
-    db.query('INSERT INTO users (name) VALUES (?)', [req.body.name], (err) => {
+app.post('/api/items', (req, res) => {
+    const { codigo, nombre } = req.body;
+    if (!codigo || !nombre) return res.status(400).send("Código y nombre son requeridos.");
+    
+    db.query('INSERT INTO items (codigo, nombre) VALUES (?, ?)', [codigo, nombre], (err) => {
         if (err) return res.status(500).send(err);
         res.redirect('/');
     });
 });
 
 // BORRAR (Delete)
-app.get('/api/usuarios/delete/:id', (req, res) => {
-    db.query('DELETE FROM users WHERE id = ?', [req.params.id], (err) => {
+app.get('/api/items/delete/:id', (req, res) => {
+    db.query('DELETE FROM items WHERE id = ?', [req.params.id], (err) => {
         if (err) return res.status(500).send(err);
         res.redirect('/');
     });
