@@ -18,7 +18,7 @@ try {
 }
 
 // Consulta
-$sql = "SELECT * FROM users";
+$sql = "SELECT * FROM items";
 $stmt = $pdo->query($sql);
 $rows = $stmt->fetchAll();
 ?>
