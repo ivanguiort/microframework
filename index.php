@@ -1,12 +1,10 @@
 <?php
-// Configuración DB
 $host = '127.0.0.1';
 $db   = 'app_db';
 $user = 'app_user';
 $pass = 'app_pass';
 $charset = 'utf8mb4';
 
-// Conexión PDO
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
 try {
     $pdo = new PDO($dsn, $user, $pass, [
@@ -17,7 +15,6 @@ try {
     die("❌ Error de conexión: " . $e->getMessage());
 }
 
-// Consulta solo a ITEMS
 $sql = "SELECT * FROM ITEMS";
 $stmt = $pdo->query($sql);
 $rows = $stmt->fetchAll();
