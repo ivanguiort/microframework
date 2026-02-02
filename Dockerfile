@@ -16,7 +16,8 @@ RUN sed -i "s/80/${PORT}/" /etc/apache2/ports.conf \
 
 # Copiar código fuente
 WORKDIR /var/www/html
-COPY src/ /var/www/html/
+COPY index.php /var/www/html/index.php
+
 
 # Dar permisos correctos
 RUN chown -R www-data:www-data /var/www/html
