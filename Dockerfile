@@ -1,77 +1,27 @@
-FROM ubuntu:22.04
+# Usamos imagen oficial de PHP con Apache
+FROM php:8.2-apache
 
-ENV DEBIAN_FRONTEND=noninteractive
+# Puerto
 ENV PORT=8080
 
-# Instalar paquetes
-RUN apt-get update && apt-get install -y \
-    apache2 \
-    mysql-server \
-    php \
-    php-mysql \
-    libapache2-mod-php \
-    supervisor \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# Instalar extensión de MySQL
+RUN docker-php-ext-install mysqli pdo pdo_mysql
 
-# Apache
-RUN a2enmod rewrite
+# Prioridad a index.php
 RUN sed -i 's/DirectoryIndex.*/DirectoryIndex index.php index.html/' /etc/apache2/mods-enabled/dir.conf
-RUN sed -i "s/Listen 80/Listen ${PORT}/" /etc/apache2/ports.conf \
+
+# Configurar Apache para puerto Railway
+RUN sed -i "s/80/${PORT}/" /etc/apache2/ports.conf \
  && sed -i "s/:80>/:${PORT}>/" /etc/apache2/sites-enabled/000-default.conf
-RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
-# MySQL dirs
-RUN mkdir -p /var/run/mysqld /docker-entrypoint-initdb.d \
- && chown -R mysql:mysql /var/run/mysqld /docker-entrypoint-initdb.d
-
-# Copiar SQL de init
-COPY sql/init.sql /docker-entrypoint-initdb.d/init.sql
-
-# Supervisor
-RUN mkdir -p /etc/supervisor/conf.d
-RUN printf "[supervisord]\nnodaemon=true\n\n\
-[program:mysql]\n\
-command=/usr/sbin/mysqld\n\
-user=mysql\n\
-autorestart=true\n\
-stdout_logfile=/dev/stdout\n\
-stderr_logfile=/dev/stderr\n\n\
-[program:apache]\n\
-command=/usr/sbin/apachectl -D FOREGROUND\n\
-autorestart=true\n\
-stdout_logfile=/dev/stdout\n\
-stderr_logfile=/dev/stderr\n" \
-> /etc/supervisor/conf.d/supervisord.conf
-
-# Script init MySQL
-RUN printf "#!/bin/bash\n\
-set -e\n\
-if [ ! -d /var/lib/mysql/mysql ]; then\n\
-  echo 'Inicializando MySQL...'\n\
-  mysqld --initialize-insecure --user=mysql\n\
-  mysqld --skip-networking &\n\
-  pid=$!\n\
-  until mysqladmin ping --silent; do sleep 1; done\n\
-  mysql < /docker-entrypoint-initdb.d/init.sql\n\
-  mysqladmin shutdown\n\
-fi\n" > /usr/local/bin/mysql-init.sh \
- && chmod +x /usr/local/bin/mysql-init.sh
-
-# Wrapper MySQL
-RUN printf "#!/bin/bash\n\
-/usr/local/bin/mysql-init.sh\n\
-exec /usr/sbin/mysqld\n" > /usr/local/bin/mysql-start.sh \
- && chmod +x /usr/local/bin/mysql-start.sh
-
-RUN sed -i "s|/usr/sbin/mysqld|/usr/local/bin/mysql-start.sh|" \
- /etc/supervisor/conf.d/supervisord.conf
-
-# App
+# Copiar código fuente
 WORKDIR /var/www/html
-RUN rm -f /var/www/html/index.html
-COPY index.php /var/www/html/index.php
+COPY src/ /var/www/html/
+
+# Dar permisos correctos
 RUN chown -R www-data:www-data /var/www/html
 
-EXPOSE 8080
-CMD ["/usr/bin/supervisord","-c","/etc/supervisor/conf.d/supervisord.conf"]
+EXPOSE ${PORT}
+
+# Comando por defecto
+CMD ["apache2-foreground"]
