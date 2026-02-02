@@ -15,8 +15,6 @@ const db = mysql.createPool({
   queueLimit: 0
 });
 
-// RUTAS CRUD
-
 // Servir el HTML
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
@@ -30,20 +28,20 @@ app.get('/api/items', (req, res) => {
 
 // CREAR (Create)
 app.post('/api/items', (req, res) => {
-    const { nombre } = req.body;
-    if (!nombre) return res.status(400).send("El nombre es requerido.");
-    
-    db.query('INSERT INTO items (nombre) VALUES (?)', [nombre], (err) => {
-        if (err) return res.status(500).send(err);
-        res.redirect('/');
+    const { codigo, nombre } = req.body;
+    if (!codigo || !nombre) return res.status(400).json({ error: "Código y nombre son requeridos." });
+
+    db.query('INSERT INTO items (codigo, nombre) VALUES (?, ?)', [codigo, nombre], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
     });
 });
 
 // BORRAR (Delete)
-app.get('/api/items/delete/:codigo', (req, res) => {
+app.delete('/api/items/:codigo', (req, res) => {
     db.query('DELETE FROM items WHERE codigo = ?', [req.params.codigo], (err) => {
-        if (err) return res.status(500).send(err);
-        res.redirect('/');
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
     });
 });
 
